@@ -1,0 +1,61 @@
+{
+  "id": "e62f6243-6755-4fdc-9cbf-47dd810b9a00",
+  "name": "BFA",
+  "publisher": "Default Publisher",
+  "version": "1.0.0.0",
+  "brief": "",
+  "description": "",
+  "privacyStatement": "",
+  "EULA": "",
+  "help": "",
+  "url": "",
+  "logo": "",
+  "dependencies": [
+    { "appId": "a193883e-fa84-4658-b50e-659a94cc8557",
+    "name": "Dynamix_GL",
+    "publisher": "Microsoft",
+    "version": "1.0.0.0"},
+    
+    {"appId": "8619480c-e19f-4daa-a563-1dd6b6bf98de",
+    "name": "dynamix_IMOS",
+    "publisher": "Microsoft",
+    "version": "1.0.0.0"},
+
+    {"appId": "3d1e4d61-71cc-48d3-8835-aa9e669ae3d8",
+    "name": "Dynamix_Trasury",
+    "publisher": "Microsoft",
+    "version": "1.0.0.0"},
+    {
+     "id": "fd19a7be-378a-478a-87b9-ea86afb44e34",
+     "name": "Prepayment Mgt.",
+     "publisher": "Dynamix",
+     "version": "1.0.0.2"
+    },
+    {"id": "f3ed1528-b975-46b7-ad4d-cb97c636ac6c",
+  "name": "Payment Request",
+  "publisher": "Default Publisher",
+  "version": "1.0.0.0"},
+  {"id": "cf550b76-43dc-4487-b29e-abeb5549732f",
+  "name": "Receipt Notice",
+  "publisher": "Default Publisher",
+  "version": "1.0.0.0"}
+   ],
+  "screenshots": [],
+  "platform": "1.0.0.0",
+  "application": "24.0.0.0",
+  "idRanges": [
+    {
+      "from": 659000000,
+      "to": 659999999
+    }
+  ],
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true
+  },
+  "runtime": "13.0",
+  "features": [
+    "NoImplicitWith"
+  ]
+}
