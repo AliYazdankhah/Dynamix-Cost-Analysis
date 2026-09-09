@@ -8,6 +8,7 @@ codeunit 659700001 "Cost Analysis Mgt."
         ProdOrderRt: Record "Prod. Order Routing Line";
         CostWkshLine: Record "Cost Analysis Wksh. Line";
         Setup: Record "Cost Analysis Setup";
+        AssemblyNodeItems: List of [Code[20]];
         NextLineNo: Integer;
         CapacityNo: Code[20];
         OverheadRate: Decimal;
@@ -25,31 +26,49 @@ codeunit 659700001 "Cost Analysis Mgt."
 
         NextLineNo := 10000;
 
-        // ---- Material Components ----
+        // The order-creation logic (IM_SalesOrder pageextension) inserts a Prod. Order
+        // Component for every child node under a grouping node - including TYP=3
+        // sub-assembly nodes, which are ALSO expanded into their own Prod. Order Line
+        // with their own routing and their own real leaf materials. That means a
+        // sub-assembly's cost exists twice in the order: once as a rolled-up "phantom"
+        // component on its parent line, and once broken down in full via its own line.
+        // Both instances resolve to the same Item No. (from CreateItem(IDBEXT.NAME2)),
+        // so we can identify and exclude the phantom by checking whether a component's
+        // Item No. also appears as the Item No. of one of this order's own output lines.
+        // Only true leaves (materials with no corresponding output line) are real costs.
+        AssemblyNodeItems := CollectAssemblyNodeItems(ProdOrderStatus, ProdOrderNo);
+
+        // ---- Material Components (leaves only) ----
         ProdOrderComp.SetRange(Status, ProdOrderStatus);
         ProdOrderComp.SetRange("Prod. Order No.", ProdOrderNo);
         if ProdOrderComp.FindSet() then
             repeat
-                CostWkshLine.Init();
-                CostWkshLine."Line No." := NextLineNo;
-                CostWkshLine."Sales Order No." := ProdOrder.IM_ORDERID;
-                CostWkshLine."Production Order Status" := ProdOrderStatus;
-                CostWkshLine."Production Order No." := ProdOrderNo;
-                CostWkshLine."Item No." := ProdOrder."Source No.";
-                CostWkshLine."Cost Component" := CostWkshLine."Cost Component"::Material;
-                CostWkshLine."Source Type" := CostWkshLine."Source Type"::"Prod. Order Component";
-                CostWkshLine."Source Line No." := Format(ProdOrderComp."Line No.");
-                CostWkshLine."Source No." := ProdOrderComp."Item No.";
-                CostWkshLine.Description := ProdOrderComp.Description;
-                CostWkshLine.Quantity := ProdOrderComp."Expected Quantity";
-                CostWkshLine."Unit of Measure Code" := ProdOrderComp."Unit of Measure Code";
-                CostWkshLine."Unit Cost" := ProdOrderComp."Unit Cost";
-                CostWkshLine."Calculation Date" := Today();
-                CostWkshLine.Insert(true);
-                NextLineNo += 10000;
+                if not AssemblyNodeItems.Contains(ProdOrderComp."Item No.") then begin
+                    CostWkshLine.Init();
+                    CostWkshLine."Line No." := NextLineNo;
+                    CostWkshLine."Sales Order No." := ProdOrder.IM_ORDERID;
+                    CostWkshLine."Production Order Status" := ProdOrderStatus;
+                    CostWkshLine."Production Order No." := ProdOrderNo;
+                    CostWkshLine."Item No." := ProdOrder."Source No.";
+                    CostWkshLine."Cost Component" := CostWkshLine."Cost Component"::Material;
+                    CostWkshLine."Source Type" := CostWkshLine."Source Type"::"Prod. Order Component";
+                    CostWkshLine."Source Line No." := Format(ProdOrderComp."Line No.");
+                    CostWkshLine."Source No." := ProdOrderComp."Item No.";
+                    CostWkshLine.Description := ProdOrderComp.Description;
+                    CostWkshLine.Quantity := ProdOrderComp."Expected Quantity";
+                    CostWkshLine."Unit of Measure Code" := ProdOrderComp."Unit of Measure Code";
+                    CostWkshLine."Unit Cost" := ProdOrderComp."Unit Cost";
+                    CostWkshLine."Calculation Date" := Today();
+                    CostWkshLine.Insert(true);
+                    NextLineNo += 10000;
+                end;
             until ProdOrderComp.Next() = 0;
 
         // ---- Capacity (Routing) ----
+        // Left unchanged: unlike materials, routing/capacity is not duplicated by the
+        // order-creation logic - the root line and every sub-assembly line each carry
+        // their own distinct Prod. Order Routing Line records for real work performed
+        // at that level, so summing across all of them is correct as-is.
         ProdOrderRt.SetRange(Status, ProdOrderStatus);
         ProdOrderRt.SetRange("Prod. Order No.", ProdOrderNo);
         if ProdOrderRt.FindSet() then
@@ -113,6 +132,28 @@ codeunit 659700001 "Cost Analysis Mgt."
                     end;
                 end;
             until ProdOrderRt.Next() = 0;
+    end;
+
+    /// <summary>
+    /// Returns every distinct Item No. that appears as the Item No. of one of this
+    /// order's own Prod. Order Line records. These are "assembly/sub-assembly node"
+    /// items (root output + expanded TYP=3 nodes) - never true leaf materials, even
+    /// though the order-creation logic also inserts each one as a Prod. Order
+    /// Component on its parent line. Used to filter those phantom components out of
+    /// the Material cost calculation so each sub-assembly's cost is counted exactly
+    /// once, via its own line's routing + real components.
+    /// </summary>
+    local procedure CollectAssemblyNodeItems(ProdOrderStatus: Enum "Production Order Status"; ProdOrderNo: Code[20]) NodeItems: List of [Code[20]]
+    var
+        ProdOrderLine: Record "Prod. Order Line";
+    begin
+        ProdOrderLine.SetRange(Status, ProdOrderStatus);
+        ProdOrderLine.SetRange("Prod. Order No.", ProdOrderNo);
+        if ProdOrderLine.FindSet() then
+            repeat
+                if not NodeItems.Contains(ProdOrderLine."Item No.") then
+                    NodeItems.Add(ProdOrderLine."Item No.");
+            until ProdOrderLine.Next() = 0;
     end;
 
     local procedure GetOverheadRate(ProdOrderRt: Record "Prod. Order Routing Line"): Decimal
