@@ -7,6 +7,15 @@ pageextension 659100030 "ItemCardExt" extends "Item Card"
             field("Analysis Unit Cost"; Rec."Analysis Unit Cost")
             {
                 ApplicationArea = All;
+
+                trigger OnDrillDown()
+                var
+                    CostCalcMgmt: Codeunit "CostCalcMgmt";
+                    Buffer: Record "CostAnalysisBuffer" temporary;
+                begin
+                    CostCalcMgmt.BuildCostBreakdown(Rec, Buffer);
+                    Page.Run(Page::"CostAnalysisBreakdown", Buffer);
+                end;
             }
         }
     }

@@ -5,7 +5,7 @@ tableextension 659200027 "ItemExt" extends Item
         field(50110; "Analysis Unit Cost"; Decimal)
         {
             Caption = 'Analysis Unit Cost';
-            DecimalPlaces = 2 : 5;
+            DecimalPlaces = 0 : 0;
             Editable = false;
             DataClassification = CustomerContent;
         }
