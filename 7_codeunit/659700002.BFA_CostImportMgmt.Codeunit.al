@@ -1,50 +1,5 @@
 codeunit 659700002 "CostImportMgmt"
 {
-    procedure ImportComponentPrices()
-    var
-        ExcelBuffer: Record "Excel Buffer" temporary;
-        ComponentPrice: Record "ComponentPrice";
-        FileInStream: InStream;
-        FileName: Text;
-        LastRowNo: Integer;
-        RowNo: Integer;
-        ItemNoText: Text;
-        PriceValue: Decimal;
-        CostCalcMgmt: Codeunit "CostCalcMgmt";
-    begin
-        if not UploadIntoStream('Select File', 'C:\Temp', ' All Files (*.*)|*.*', FileName, FileInStream) then
-            exit;
-
-        ExcelBuffer.OpenBookStream(FileInStream, 'Sheet1');
-        ExcelBuffer.ReadSheet();
-
-        if ExcelBuffer.FindLast() then
-            LastRowNo := ExcelBuffer."Row No.";
-
-        for RowNo := 2 to LastRowNo do begin
-            if ExcelBuffer.Get(RowNo, 1) then begin
-                ItemNoText := ExcelBuffer."Cell Value as Text";
-                if ItemNoText <> '' then begin
-                    PriceValue := 0;
-                    if ExcelBuffer.Get(RowNo, 2) then
-                        Evaluate(PriceValue, ExcelBuffer."Cell Value as Text");
-
-                    if ComponentPrice.Get(ItemNoText) then begin
-                        ComponentPrice."Unit Price" := PriceValue;
-                        ComponentPrice.Modify();
-                    end else begin
-                        ComponentPrice.Init();
-                        ComponentPrice."Item No." := ItemNoText;
-                        ComponentPrice."Unit Price" := PriceValue;
-                        ComponentPrice.Insert();
-                    end;
-                end;
-            end;
-        end;
-
-        CostCalcMgmt.CalculateAll();
-    end;
-
     procedure ImportRoutingTimes()
     var
         ExcelBuffer: Record "Excel Buffer" temporary;
